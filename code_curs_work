@@ -1,0 +1,225 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <random>
+#include <chrono>
+#include <iomanip>
+#include <numeric>
+
+using namespace std;
+
+// Прототипы функций для тестов и вывода
+void generateSearchData();
+void displayResults(const string& algorithm, const string& scenario, int dataSize, double averageTime);
+string getAlgorithmName(int algo);  // Прототип функции getAlgorithmName
+
+// Прототипы вспомогательных функций
+vector<int> generateArray(int size);
+void printArray(const vector<int>& arr);
+
+// Прототипы функций поиска
+int linearSearch(const vector<int>& arr, int target);
+int binarySearch(const vector<int>& arr, int target, int left, int right);
+int exponentialSearch(const vector<int>& arr, int target);
+int interpolationSearch(const vector<int>& arr, int target);
+
+
+int linearSearch(const vector<int>& arr, int target) {
+    // Линейный поиск элемента в массиве
+    for (int i = 0; i < arr.size(); i++) {
+        if (arr[i] == target) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+int binarySearch(const vector<int>& arr, int target, int left, int right) {
+    // Бинарный поиск элемента
+    if (right >= left) {
+        int mid = (left + right) / 2;
+        if (arr[mid] == target) {
+            return mid;
+        }
+        if (target < arr[mid]) {
+            return binarySearch(arr, target, left, mid - 1);
+        }
+        return binarySearch(arr, target, mid + 1, right);
+    }
+    return -1;
+}
+
+int exponentialSearch(const vector<int>& arr, int target) {
+    // Экспоненциальный поиск элемента
+    if (arr[0] == target) {
+        return 0;
+    }
+
+    int bound = 1;
+    while (bound < arr.size() && arr[bound] <= target) {
+        bound *= 2;
+    }
+
+    return binarySearch(arr, target, bound / 2, min(bound, (int)arr.size() - 1));
+}
+
+int interpolationSearch(const vector<int>& arr, int target) {
+    // Интерполяционный поиск элемента
+    int left = 0;
+    int right = arr.size() - 1;
+
+    while (left <= right && target >= arr[left] && target <= arr[right]) {
+        int pos = left + (double)(right - left) * (target - arr[left]) / (arr[right] - arr[left]);
+        if (arr[pos] == target) {
+            return pos;
+        }
+        if (arr[pos] < target) {
+            left = pos + 1;
+        }
+        else {
+            right = pos - 1;
+        }
+    }
+
+    return -1;
+}
+
+vector<int> generateArray(int size) {
+    // Генерация случайного массива
+    vector<int> arr(size);
+
+    random_device rd;
+    mt19937 rng(rd());
+    uniform_int_distribution<int> dist(1, 100000);
+
+    for (int i = 0; i < size; i++) {
+        arr[i] = dist(rng);
+    }
+
+    // Сортируем массив
+    sort(arr.begin(), arr.end());
+
+
+    return arr;
+}
+
+void generateSearchData() {
+    for (int algo = 1; algo <= 4; algo++) {
+        for (int scenario = 1; scenario <= 3; scenario++) {
+            for (int size = 10000; size <= 100000; size += 10000) {
+                vector<int> arr = generateArray(size);
+                int target;
+                string scenarioDescription;
+                
+
+                switch (scenario) {
+                case 1:
+                    // Лучший случай
+                    if (algo == 1) { // Линейный поиск
+                        target = arr[0]; // Элемент на первом месте
+                    }
+                    else if (algo == 2) { // Бинарный поиск
+                        target = arr[size / 2-1]; // Элемент в центре массива
+                    }
+                    else if (algo == 3) { // Экспоненциальный поиск
+                        target = arr[0]; // Элемент на первой границе
+                    }
+                    else if (algo == 4) { // Интерполяционный поиск
+                        target = arr[size - 1]; // Элемент в центре массива
+                    }
+                    scenarioDescription = "Лучший";
+                    break;
+                case 2:
+                    
+                    if (algo == 1) { // Линейный поиск
+                        // Средний случай
+                        target = arr[size / 2]; // Случайный элемент (средина массива)
+                        
+                    }
+                    else if (algo == 2) { // Бинарный поиск
+                        target = arr[size /2]; // Случайный элемент (средина массива)
+                    }
+                    else if (algo == 3) { // Экспоненциальный поиск
+                        target = arr[size / 2]; // Случайный элемент (средина массива)
+                    }
+                    else if (algo == 4) { // Интерполяционный поиск
+                        target = arr[size / 2 ]; // Случайный элемент (средина массива)
+                    }
+                    scenarioDescription = "Средний";
+                    break;
+                case 3:
+                    // Худший случай
+                    if (algo == 1) { // Линейный поиск
+                        target = arr[size - 1]; // Элемент на последнем месте
+                    }
+                    else if (algo == 2) { // Бинарный поиск
+                        target = arr[0]; // Элемент на краю массива
+                    }
+                    else if (algo == 3) { // Экспоненциальный поиск
+                        target = arr[size - 1]; // Элемент на последней границе
+                    }
+                    else if (algo == 4) { // Интерполяционный поиск
+                                            
+                        target = arr[size - 1]; 
+                    }
+                    scenarioDescription = "Худший";
+                    break;
+                }
+
+                // Массив для хранения времен каждого измерения
+                vector<double> times;
+
+                for (int i = 0; i < 500; i++) {
+                    auto startTime = chrono::high_resolution_clock::now();
+                    int resultIndex;
+
+                    switch (algo) {
+                    case 1:
+                        resultIndex = linearSearch(arr, target);
+                        break;
+                    case 2:
+                        resultIndex = binarySearch(arr, target, 0, size - 1);
+                        break;
+                    case 3:
+                        resultIndex = exponentialSearch(arr, target);
+                        break;
+                    case 4:
+                        resultIndex = interpolationSearch(arr, target);
+                        break;
+                    }
+                    // Сохранение времени выполнения
+                    double elapsedTime = chrono::duration<double>(chrono::high_resolution_clock::now() - startTime).count();
+                    times.push_back(elapsedTime);
+                }
+
+                // Вычисление среднего времени
+                double averageTime = accumulate(times.begin(), times.end(), 0.0) / times.size();
+
+                // Выводим среднее время
+                displayResults(getAlgorithmName(algo), scenarioDescription, size, averageTime);
+            }
+        }
+    }
+}
+
+string getAlgorithmName(int algo) {
+    switch (algo) {
+    case 1: return "Линейный поиск";
+    case 2: return "Бинарный поиск";
+    case 3: return "Экспоненциальный поиск";
+    case 4: return "Интерполяционный поиск";
+    default: return "";
+    }
+}
+
+void displayResults(const string& searchType, const string& caseType, int size, double averageTime) {
+    cout << searchType << ", " << caseType << ", " << size << ", " << fixed << setprecision(10) << averageTime << endl;
+}
+
+int main() {
+    setlocale(LC_ALL, "ru");
+
+    generateSearchData();
+
+    return 0;
+}
